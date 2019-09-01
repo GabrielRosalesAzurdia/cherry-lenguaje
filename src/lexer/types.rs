@@ -1,4 +1,5 @@
 // use std::str::FromStr;
+
 #[derive(Debug, PartialEq, Clone)]
 #[allow(dead_code)]
 pub enum Token {
@@ -27,11 +28,14 @@ pub enum Token {
     LET 
 }
 
+
+#[derive(Debug)]
 pub struct TokenType{
     pub type_token : Token,
     pub literal : String,
 }
 
+#[derive(Debug)]
 pub struct Lexer {
     input : String,
     position : u32,  // current position in input (points to current char)
@@ -61,6 +65,8 @@ impl Lexer{
     pub fn next_token(&mut self) -> TokenType {
         let mut tok : TokenType = TokenType{ type_token:Token::EOF, literal:String::from("") };
 
+        self.skip_whitespace();
+
         if self.ch != 0 {
 
             let array_of_u8 = [self.ch];
@@ -85,6 +91,20 @@ impl Lexer{
             }else if string_complete == String::from("}"){
                 tok = TokenType{ type_token:Token::RBRACE, literal:String::from("}") };
             }
+            else{
+                if self.is_letter(&self.ch){
+                    tok.literal = self.read_identifier();
+                    tok.type_token = self.lookup_ident(&tok.literal);
+                    return tok;
+                }else if  self.is_digit(&self.ch){
+                    tok.literal = self.read_number();
+                    tok.type_token = Token::INT;
+                    return tok;
+                }
+                else{
+                    tok = TokenType{ type_token:Token::Illegal, literal:string_complete.to_string() };
+                }
+            }
 
         }else{
             tok = TokenType{ type_token:Token::EOF, literal:String::from("") };
@@ -94,6 +114,63 @@ impl Lexer{
 
         return tok;
 
+    }
+
+    pub fn read_identifier(&mut self) -> String {
+        let p = self.position as usize;
+        
+        while self.is_letter(&self.ch) {
+            self.read_char();
+        }
+
+        let resultado = &self.input[p..self.position as usize];
+
+        resultado.to_string()
+        
+    }
+
+    pub fn is_letter(&self,c : &u8 ) -> bool {
+        let p1 = 'a' as u8;
+        let p2 = 'z' as u8;
+        let p3 = 'A' as u8;
+        let p4 = 'Z' as u8;
+        let p5 = '_' as u8;
+        return &p1 <= c && c <= &p2 || &p3 <= c && c <= &p4 || c == &p5;   
+    }
+
+    pub fn lookup_ident(&self, literal : &String) -> Token {
+        if literal == "fn"{
+            return Token::FUNCTION;
+        }
+        else if literal == "let"{
+            return Token::LET;
+        }
+
+        return Token::IDENT;
+    }
+
+    pub fn skip_whitespace(&mut self){
+        while self.ch == ' ' as u8 || self.ch == '\t' as u8 || self.ch == '\n' as u8 || self.ch == '\r' as u8 {
+            self.read_char();
+        }
+    }
+
+    pub fn read_number(&mut self) -> String {
+        let p = self.position as usize;
+        
+        while self.is_digit(&self.ch) {
+            self.read_char();
+        }
+
+        let resultado = &self.input[p..self.position as usize];
+
+        resultado.to_string()
+    }
+
+    pub fn is_digit(&self, c : &u8) -> bool{
+        let num1 = '0' as u8;
+        let num2 = '9' as u8 ;
+        return &num1 <= c && c <= &num2;
     }
 
 }
