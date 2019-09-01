@@ -13,6 +13,16 @@ pub enum Token {
     // operations 
     ASSING,
     PLUS,
+    MINUS,
+    BANG,
+    ASTERISK,
+    SLASH,
+
+    BIGERTHAN,
+    LESSTHAN,
+
+    EQUAL,
+    NOTEQUAL,
 
     // Delimiters 
     COMMA,
@@ -25,7 +35,12 @@ pub enum Token {
 
     // keywords
     FUNCTION,
-    LET 
+    LET,
+    TRUE,
+    FALSE,
+    IF,
+    ELSE,
+    RETURN 
 }
 
 
@@ -73,23 +88,56 @@ impl Lexer{
             let string_complete = String::from_utf8_lossy(&array_of_u8);
 
             if string_complete == String::from("=") {
-                tok = TokenType{ type_token:Token::ASSING, literal:String::from("=") };
-            }else if string_complete == String::from(";"){
-                tok = TokenType{ type_token:Token::SEMICOLON, literal:String::from(";") };
-            }else if string_complete == String::from("{"){
-                tok = TokenType{ type_token:Token::LBRACE, literal:String::from("{") };
-            }else if string_complete == String::from("}"){
-                tok = TokenType{ type_token:Token::RBRACE, literal:String::from("}") };
-            }else if string_complete == String::from(","){
-                tok = TokenType{ type_token:Token::COMMA, literal:String::from(",") };
-            }else if string_complete == String::from("+"){
+                if self.peek_char() == '='{
+                    self.read_char();
+                    tok = TokenType{ type_token:Token::EQUAL, literal:String::from("==") }
+                }else{
+                    tok = TokenType{ type_token:Token::ASSING, literal:String::from("=") };
+                }
+            }
+            else if string_complete == String::from("+"){
                 tok = TokenType{ type_token:Token::PLUS, literal:String::from("+") };
-            }else if string_complete == String::from("("){
-                tok = TokenType{ type_token:Token::LPAREN, literal:String::from("(") };
-            }else if string_complete == String::from(")"){
-                tok = TokenType{ type_token:Token::RPAREN, literal:String::from(")") };
-            }else if string_complete == String::from("}"){
+            }
+            else if string_complete == String::from("-") {
+                tok = TokenType{ type_token:Token::MINUS, literal:String::from("-") };
+            }
+            else if string_complete == String::from("!") {
+                if self.peek_char() == '='{
+                    self.read_char();
+                    tok = TokenType{ type_token:Token::NOTEQUAL, literal:String::from("!=") }
+                }else{
+                tok = TokenType{ type_token:Token::BANG, literal:String::from("!") };
+                }
+            }
+            else if string_complete == String::from("/") {
+                tok = TokenType{ type_token:Token::SLASH, literal:String::from("/") };
+            }
+            else if string_complete == String::from("*") {
+                tok = TokenType{ type_token:Token::ASTERISK, literal:String::from("*") };
+            }
+            else if string_complete == String::from(">") {
+                tok = TokenType{ type_token:Token::BIGERTHAN, literal:String::from(">") };
+            }
+            else if string_complete == String::from("<") {
+                tok = TokenType{ type_token:Token::LESSTHAN, literal:String::from("<") };
+            }
+            else if string_complete == String::from(";"){
+                tok = TokenType{ type_token:Token::SEMICOLON, literal:String::from(";") };
+            }
+            else if string_complete == String::from(","){
+                tok = TokenType{ type_token:Token::COMMA, literal:String::from(",") };
+            }
+            else if string_complete == String::from("{"){
+                tok = TokenType{ type_token:Token::LBRACE, literal:String::from("{") };
+            }
+            else if string_complete == String::from("}"){
                 tok = TokenType{ type_token:Token::RBRACE, literal:String::from("}") };
+            }
+            else if string_complete == String::from("("){
+                tok = TokenType{ type_token:Token::LPAREN, literal:String::from("(") };
+            }
+            else if string_complete == String::from(")"){
+                tok = TokenType{ type_token:Token::RPAREN, literal:String::from(")") };
             }
             else{
                 if self.is_letter(&self.ch){
@@ -145,6 +193,21 @@ impl Lexer{
         else if literal == "let"{
             return Token::LET;
         }
+        else if literal == "true"{
+            return Token::TRUE;
+        }
+        else if literal == "false"{
+            return Token::FALSE;
+        }
+        else if literal == "if"{
+            return Token::IF;
+        }
+        else if literal == "else"{
+            return Token::ELSE;
+        }
+        else if literal == "return"{
+            return Token::RETURN;
+        }
 
         return Token::IDENT;
     }
@@ -171,6 +234,14 @@ impl Lexer{
         let num1 = '0' as u8;
         let num2 = '9' as u8 ;
         return &num1 <= c && c <= &num2;
+    }
+
+    pub fn peek_char(&self) -> char {
+        if self.read_position as usize >= self.input.len(){
+            return ' ';
+        }else{
+            return self.input.chars().nth(self.read_position as usize).unwrap();
+        }
     }
 
 }
