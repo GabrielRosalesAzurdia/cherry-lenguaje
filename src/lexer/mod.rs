@@ -1,24 +1,13 @@
 pub mod types;
 use types::Token;
-// use std::collections::HashMap;
 
 struct Character{
     expected_type : Token,
     expected_literal : String,
 }
 
-fn test_next_token(){
+pub fn test_next_token(){
     let input = "=+(){},;".to_string();
-    // let mut test : HashMap<String, Token > = HashMap::new();
-    // test.insert( String::from("="), Token::ASSING );
-    // test.insert( String::from("+"), Token::PLUS );
-    // test.insert( String::from("("), Token::LPAREN );
-    // test.insert( String::from(")"), Token::RPAREN );
-    // test.insert( String::from("{"), Token::LBRACE );
-    // test.insert( String::from("}"), Token::RBRACE );
-    // test.insert( String::from(","), Token::COMMA );
-    // test.insert( String::from(";"), Token::SEMICOLON );
-    // test.insert( String::from(""), Token::EOF);
 
     let test = vec![
         Character{ expected_type:Token::ASSING, expected_literal: "=".to_string() },
@@ -35,20 +24,21 @@ fn test_next_token(){
     let mut l = types::new(input);
 
     for i in test{
+        
         let tok = l.next_token();
-        let x = i.expected_type;
+        let _x = i.expected_type;
 
-        match tok.type_token {
-            x => panic!("joder"),
-            _ => println!("bien")
-        };
+        // match tok.type_token {
+        //     _x => println!("joder"),
+        //     _ => println!("bien")
+        // };
 
-        // if x != i.expected_type{
-        //     println!("tomaos mal el type");
-        // }
+        if _x != tok.type_token{
+            panic!("bien type");
+        }
 
         if tok.literal != i.expected_literal {
-            println!("toamos mal el literal")
+            panic!("bien literal")
         }
 
     }

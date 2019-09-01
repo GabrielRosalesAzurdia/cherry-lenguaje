@@ -1,4 +1,5 @@
 // use std::str::FromStr;
+#[derive(Debug, PartialEq, Clone)]
 #[allow(dead_code)]
 pub enum Token {
     Illegal,
@@ -97,7 +98,7 @@ impl Lexer{
 
 }
 
-// New lwxer
+// New lexer
 pub fn new(input:String) -> Lexer{
     let mut l = Lexer{ input:input, position:0, read_position:0, ch:0 };
     l.read_char();
