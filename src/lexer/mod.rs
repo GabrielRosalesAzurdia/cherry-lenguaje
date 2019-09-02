@@ -7,6 +7,7 @@ struct Character{
     expected_literal : String,
 }
 
+#[test]
 pub fn test_next_token(){
     let input = "let five = 5;
     let ten = 10;
