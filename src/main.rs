@@ -3,6 +3,8 @@ use std::io::{self, BufRead, Write};
 pub mod lexer;
 
 fn main() {
+    println!("hello, welcome to the cherry programing lenguaje");
+    println!("feel free to type comands");
     let stdin = io::stdin();
 
     loop {
