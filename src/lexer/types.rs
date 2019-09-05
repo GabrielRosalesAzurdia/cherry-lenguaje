@@ -1,6 +1,6 @@
 // use std::str::FromStr;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[allow(dead_code)]
 pub enum Token {
     Illegal,
@@ -48,6 +48,13 @@ pub enum Token {
 pub struct TokenType{
     pub type_token : Token,
     pub literal : String,
+}
+
+impl TokenType {
+    pub fn clone (&self) -> TokenType {
+        let x = TokenType{ type_token:self.type_token ,literal:self.literal.to_string() };
+        return x;
+    }
 }
 
 #[derive(Debug)]
@@ -242,6 +249,11 @@ impl Lexer{
         }else{
             return self.input.chars().nth(self.read_position as usize).unwrap();
         }
+    }
+
+    pub fn clone (&self) -> Lexer {
+        let x = Lexer{ ch:self.ch , input:self.input.to_string(), position : self.position, read_position : self.read_position};
+        return x;
     }
 
 }
