@@ -1,11 +1,17 @@
 #  THE CHERRY PROGRAMING LENGUAJE
 
-this is a lexer of the cherry programing lenguaje (that is own of me) that is writen in rust.
+This is a lexer and parser with abstract sintax tree of the cherry programing lenguaje (which is being created with this), is writen in rust.
 
-to test it type :
+Este es un lexer y parser con un abstract sintax tree para el lenguaje de programacion cherry (el cual esta siendo creado con esto), esta escrito en rust.
+
+The requirement to run the code is install rust in your machine.
+
+El requisito para correr el codigo es tener rust instalado en el equipo.
+
+to test it type / para hacer test escribir :
 
 > cargo test
 
-to run it type:
+to run it type / para correrlo escribir :
 
 > cargo run

@@ -1,6 +1,8 @@
-// use std::str::FromStr;
+use std::cmp::Eq;
+use std::cmp::PartialEq;
+use std::hash::Hash;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Eq, Hash)]
 #[allow(dead_code)]
 pub enum Token {
     Illegal,
@@ -44,11 +46,12 @@ pub enum Token {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug,Eq, PartialEq, Hash)]
 pub struct TokenType{
     pub type_token : Token,
     pub literal : String,
 }
+
 
 impl TokenType {
     pub fn clone (&self) -> TokenType {
