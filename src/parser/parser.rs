@@ -2,8 +2,8 @@ use crate::lexer::types::TokenType;
 use crate::lexer::types::Lexer;
 use crate::lexer::types::Token;
 use crate::ast::ast;
-use crate::ast::ast::Statement;
 use std::collections::HashMap;
+
 
 // pub enum SIMBOLS1 {
 //     LOWEST (u8) ,
@@ -16,19 +16,35 @@ use std::collections::HashMap;
 // }
 
 pub const LOWEST : i32 = 1;
-pub const EQUALs : i32 = 1;
-pub const LESSGREATHER : i32 = 1;
-pub const SUM : i32 = 1;
-pub const PRODUCT : i32 = 1;
-pub const PREFIX : i32 = 1;
-pub const CALL : i32 = 1;
+pub const EQUALS : i32 = 2;
+pub const LESSGREATHER : i32 = 3;
+pub const SUM : i32 = 4;
+pub const PRODUCT : i32 = 5;
+pub const PREFIX : i32 = 6;
+pub const CALL : i32 = 7;
+
+// static mut precedence_var :HashMap<Token,i32> = HashMap::new();
+
+pub fn precedence_var () -> HashMap<Token,i32> {
+    let mut x = HashMap::new();
+    x.insert(Token::EQUAL, EQUALS);
+    x.insert(Token::NOTEQUAL, EQUALS);
+    x.insert(Token::LESSTHAN, LESSGREATHER);
+    x.insert(Token::BIGERTHAN, LESSGREATHER);
+    x.insert(Token::PLUS, SUM);
+    x.insert(Token::MINUS, SUM);
+    x.insert(Token::SLASH, PRODUCT);
+    x.insert(Token::ASTERISK, PRODUCT);
+    x
+}
 
 
 pub enum FUNCIONES {
-//    PREFIXPARSEFN( for<'r> fn(&'r mut Parser) -> std::boxed::Box<(dyn ast::Expression + 'static)>  ),
+//  PREFIXPARSEFN( for<'r> fn(&'r mut Parser) -> std::boxed::Box<(dyn ast::Expression + 'static)>  ),
+//  INFIXPARSEFN( fn(e : dyn ast::Expression) ->  Option<Box< dyn ast::Expression>> ),
     PREFIXPARSEFN( (for<'r> fn(&'r Parser) -> std::option::Option<std::boxed::Box<(dyn ast::Expression + 'static)>>, String) ),
     PREFIXPARSEFN2( (for<'r> fn(&'r mut Parser) -> std::option::Option<std::boxed::Box<(dyn ast::Expression + 'static)>>, String) ),
-    INFIXPARSEFN( fn(e : dyn ast::Expression) ->  Option<Box< dyn ast::Expression>> ),
+    INFIXPARSEFN( (for<'r> fn(&'r mut Parser, std::boxed::Box<(dyn ast::Expression + 'static)>) -> std::option::Option<std::boxed::Box<(dyn ast::Expression + 'static)>>, std::string::String) )
 }
 
 // fn prefix_parse_fn () ->  Option<Box< dyn ast::Expression>> {
@@ -59,6 +75,59 @@ pub struct Parser {
 }
 
 impl Parser{
+
+    pub fn parse_grouped_expression(&mut self) -> Option<Box<dyn ast::Expression>> {
+        self.next_token();
+        let exp = self.parse_expression(LOWEST);
+        if self.expect_peek(Token::RPAREN){
+            return None;
+        }
+        return exp;
+    }
+
+    pub fn parse_boolean(&self) -> Option<Box<dyn ast::Expression>> {
+        Some(Box::new(ast::Boolean{ token:self.cur_token.clone(), value:self.cur_token_is( Token::TRUE ) }))
+    }
+
+    pub fn parse_infix_expression(&mut self, left: Box<dyn ast::Expression>) -> Option<Box<dyn ast::Expression>> {
+        self.next_token();
+
+        let token_var = self.cur_token.clone();
+        let operator_var = self.cur_token.literal.to_string();
+        let left_var = left;
+
+        let precedence = self.cur_precedence();
+        self.next_token();
+        
+        Some(
+            Box::new(
+                ast::InfixExpression{
+                    token: token_var,
+                    operator: operator_var,
+                    left: left_var,
+                    rigth: self.parse_expression(precedence).unwrap()
+                }
+            )
+        )
+    }
+
+    pub fn peek_precedence (&self) -> i32 {
+        let pv = precedence_var();
+        let result = pv.get(&self.peek_token.type_token);
+        match result {
+            Some(c) => *c,
+            None => LOWEST
+        }
+    }
+
+    pub fn cur_precedence (&self) -> i32 {
+        let pv = precedence_var();
+        let result = pv.get(&self.cur_token.type_token);
+        match result {
+            Some(c) => *c,
+            None => LOWEST
+        }
+    }
 
     pub fn parse_prefix_expression(&mut self) -> Option<Box<dyn ast::Expression >> {
 
@@ -101,17 +170,40 @@ impl Parser{
     pub fn parse_expression(&mut self,precedence : i32) -> Option<Box<dyn ast::Expression>> {
 
         let mut x = self.cur_token.clone();
-
         x.literal = "".to_string();
-
         let prefix = self.prefixParseFns.get(&x);
+
+        println!("x es : {:?}",&x);
 
         match prefix {
             Some( FUNCIONES::PREFIXPARSEFN(c) ) => {
                 let left_exp = c.0(self); 
                 println!("prefixparserfn, el left-exp es {:?}", &left_exp);  
                 match left_exp{
-                    Some(c) => Some(c), 
+                    Some(c) => {
+
+                        let mut ce = c;
+
+                        println!("precedence: {}, peek_precedence: {}",precedence, self.peek_precedence()  );
+
+                        while !self.peek_token_is(Token::SEMICOLON) && precedence < self.peek_precedence(){
+                            println!("entra al bucle");
+                            let mut y = self.peek_token.clone();
+                            y.literal = "".to_string();
+                            let infix = self.infixParseFns.get(&y);
+                            match infix {
+                                Some( FUNCIONES::INFIXPARSEFN(tupla_infix) ) => {
+
+                                    ce = tupla_infix.0(self,ce).unwrap();
+
+                                },
+                                _ => return Some(ce)
+                            };
+
+                        }
+
+                        Some(ce)
+                    }, 
                     None => { 
                         let mut err = "".to_string();
 
@@ -132,7 +224,30 @@ impl Parser{
                 let left_exp = c.0( self ); 
                 println!("prefixparserfn2, el left-exp es {:?}", &left_exp);  
                 match left_exp{
-                    Some(c) => Some(c), 
+                    Some(c) => {
+
+                        let mut ce = c;
+
+                        println!("p: {}, x: {}",precedence, self.peek_precedence()  );
+
+                        while !self.peek_token_is(Token::SEMICOLON) && precedence < self.peek_precedence(){
+                            println!("entra al bucle");
+                            let mut y = self.peek_token.clone();
+                            y.literal = "".to_string();
+                            let infix = self.infixParseFns.get(&y);
+                            match infix {
+                                Some( FUNCIONES::INFIXPARSEFN(tupla_infix) ) => {
+
+                                    ce = tupla_infix.0(self,ce).unwrap();
+
+                                },
+                                _ => return Some(ce)
+                            };
+
+                        }
+
+                        Some(ce)
+                    }, 
                     None => None
                 }      
             },
@@ -265,7 +380,7 @@ impl Parser{
     }
 
     pub fn cur_token_is (&self, token : Token) -> bool { 
-        return self.peek_token.type_token == token;
+        return self.cur_token.type_token == token;
     } 
 
     pub fn peek_token_is (&self, token : Token) -> bool {
@@ -323,10 +438,23 @@ pub fn new(l : &Lexer) -> Parser{
         infixParseFns : HashMap::new()
     };
 
+    // Prefix operations
     p.register_prefix(TokenType{type_token:Token::IDENT,literal:"".to_string()}, FUNCIONES::PREFIXPARSEFN( (Parser::parse_identifier, "parse_identifier".to_string()) ));
     p.register_prefix(TokenType{type_token:Token::INT,literal:"".to_string()}, FUNCIONES::PREFIXPARSEFN( (Parser::parse_integer_literal, "parse_integer_literal".to_string()) ));
     p.register_prefix(TokenType{type_token:Token::BANG,literal:"".to_string()}, FUNCIONES::PREFIXPARSEFN2( (Parser::parse_prefix_expression, "parse_prefix_expression".to_string()) ));
     p.register_prefix(TokenType{type_token:Token::MINUS,literal:"".to_string()}, FUNCIONES::PREFIXPARSEFN2( (Parser::parse_prefix_expression, "parse_prefix_expression".to_string()) ));
+    p.register_prefix(TokenType{type_token:Token::TRUE,literal:"".to_string()}, FUNCIONES::PREFIXPARSEFN( (Parser::parse_boolean, "parse_bolean".to_string()) ));
+    p.register_prefix(TokenType{type_token:Token::FALSE,literal:"".to_string()}, FUNCIONES::PREFIXPARSEFN( (Parser::parse_boolean, "parse_bolean".to_string()) ));
+    p.register_prefix(TokenType{type_token:Token::LPAREN,literal:"".to_string()}, FUNCIONES::PREFIXPARSEFN2( (Parser::parse_grouped_expression,"parse_gropued_expression".to_string()) ));
+    // infix operations
+    p.register_Infix(TokenType{type_token:Token::PLUS,literal:"".to_string()}, FUNCIONES::INFIXPARSEFN( (Parser::parse_infix_expression, "parse_infix_expression".to_string()) ));
+    p.register_Infix(TokenType{type_token:Token::MINUS,literal:"".to_string()}, FUNCIONES::INFIXPARSEFN( (Parser::parse_infix_expression, "parse_infix_expression".to_string()) ));    
+    p.register_Infix(TokenType{type_token:Token::SLASH,literal:"".to_string()}, FUNCIONES::INFIXPARSEFN( (Parser::parse_infix_expression, "parse_infix_expression".to_string()) ));
+    p.register_Infix(TokenType{type_token:Token::ASTERISK,literal:"".to_string()}, FUNCIONES::INFIXPARSEFN( (Parser::parse_infix_expression, "parse_infix_expression".to_string()) ));
+    p.register_Infix(TokenType{type_token:Token::EQUAL,literal:"".to_string()}, FUNCIONES::INFIXPARSEFN( (Parser::parse_infix_expression, "parse_infix_expression".to_string()) ));
+    p.register_Infix(TokenType{type_token:Token::NOTEQUAL,literal:"".to_string()}, FUNCIONES::INFIXPARSEFN( (Parser::parse_infix_expression, "parse_infix_expression".to_string()) ));
+    p.register_Infix(TokenType{type_token:Token::LESSTHAN,literal:"".to_string()}, FUNCIONES::INFIXPARSEFN( (Parser::parse_infix_expression, "parse_infix_expression".to_string()) ));
+    p.register_Infix(TokenType{type_token:Token::BIGERTHAN,literal:"".to_string()}, FUNCIONES::INFIXPARSEFN( (Parser::parse_infix_expression, "parse_infix_expression".to_string()) ));
 
     p.next_token();
     p.next_token();

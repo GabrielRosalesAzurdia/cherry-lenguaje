@@ -267,3 +267,71 @@ impl Expression for PrefixExpression{
         self
     }    
 }
+
+//------------------------------------------------------------------------------
+
+#[warn(dead_code)]
+pub struct InfixExpression{
+    pub token : TokenType,
+    pub left : Box<dyn Expression>,
+    pub operator : String ,
+    pub rigth : Box<dyn Expression>
+}
+
+impl Node for InfixExpression{
+    fn token_literal(&self) -> String {
+        self.token.literal.to_string()
+    }
+
+    fn a_string(&self) -> String {
+        let mut x = String::from("");
+        x = x + "(";
+        x = x + &self.left.a_string();
+        x = x + " " + &self.operator + " ";
+        x = x + &self.rigth.a_string();
+        x = x + ")";
+        x
+    }
+}
+
+impl Expression for InfixExpression{
+    fn expression_node(&self){
+
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }   
+}
+
+//------------------------------------------------------------------------------
+
+#[warn(dead_code)]
+#[derive(Debug)]
+pub struct Boolean {
+    pub token : TokenType,
+    pub value : bool
+}
+
+impl Node for Boolean {
+    fn token_literal(&self) -> String {
+        self.token.literal.to_string()
+    }
+
+    fn a_string(&self) -> String {
+        self.token.literal.to_string()
+    }
+}
+
+impl Expression for Boolean {
+    fn expression_node(&self){
+
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    } 
+}
+
+//------------------------------------------------------------------------------
+
