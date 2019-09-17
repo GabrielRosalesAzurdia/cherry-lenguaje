@@ -1,6 +1,6 @@
 pub mod ast;
+use ast::Node;
 use crate::lexer::types;
-use crate::ast::ast::Node;
 
 
 #[test]

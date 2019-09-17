@@ -1,7 +1,7 @@
 use crate::lexer::types::TokenType;
 use crate::lexer::types::Lexer;
 use crate::lexer::types::Token;
-use crate::ast::ast;
+use crate::ab_st_tr::ast;
 use std::collections::HashMap;
 
 pub const LOWEST : i32 = 1; // LOWEST VALUE
@@ -77,7 +77,7 @@ impl Parser{
 
         self.next_token();
 
-        println!("en el punto de inflexion el token es: {:?}", self.cur_token.clone());
+        // println!("en el punto de inflexion el token es: {:?}", self.cur_token.clone());
         // args.push(self.parse_expression(LOWEST).unwrap());
         match self.parse_expression(LOWEST){
             Some(b) => args.push(b),
@@ -94,7 +94,7 @@ impl Parser{
             return vec![];
         }
 
-        println!("logro enviar los args");
+        // println!("logro enviar los args");
         return args;
 
     }
@@ -316,7 +316,10 @@ impl Parser{
         
         match my_int {
             Ok(a) => { lit.value = a; Some(Box::new(lit)) },
-            Err(_) => { println!("error al parcear el numero"); None}
+            Err(_) => { 
+                // println!("error al parcear el numero"); 
+                None
+            }
         }
 
     }
@@ -330,7 +333,7 @@ impl Parser{
         let mut x = self.cur_token.clone();
         x.literal = "".to_string();
         let prefix = self.prefixParseFns.get(&x);
-        println!("x es : {:?}",&x);
+        // println!("x es : {:?}",&x);
 
         match prefix {
             // Some( FUNCIONES::PREFIXPARSEFN(c) ) => {
@@ -378,44 +381,54 @@ impl Parser{
             // },
 
             Some( FUNCIONES::PREFIXPARSEFN2(c) ) => {
-                println!("vamos a evaluar a: {}", c.1);
+                // println!("vamos a evaluar a: {}", c.1);
                 let left_exp = c.0( self ); 
-                println!("prefixparserfn2, el left-exp es {:?}", &left_exp);  
+                // println!("prefixparserfn2, el left-exp es {:?}", &left_exp);  
                 match left_exp{
                     Some(c) => {
 
                         let mut ce = c;
 
-                        println!("p: {}, x: {}",precedence, self.peek_precedence()  );
+                        // println!("p: {}, x: {}",precedence, self.peek_precedence()  );
 
                         while !self.peek_token_is(Token::SEMICOLON) && precedence < self.peek_precedence(){
 
-                            println!("entra al bucle");
+                            // println!("entra al bucle");
                             let mut y = self.peek_token.clone();
                             y.literal = "".to_string();
                             let infix = self.infixParseFns.get(&y);
-                            println!("y es : {:?}",&y);
+                            // println!("y es : {:?}",&y);
 
                             match infix {
                                 Some( FUNCIONES::INFIXPARSEFN(tupla_infix) ) => {
-                                    println!("se esta ejecutando un infix");
+                                    // println!("se esta ejecutando un infix");
                                     ce = tupla_infix.0(self,ce).unwrap();
 
                                 },
-                                _ => { println!("sale del bucle por infix retornando None"); return Some(ce); }
+                                _ => { 
+                                    // println!("sale del bucle por infix retornando None"); 
+                                    return Some(ce); 
+                                }
                             };
 
-                            println!("sale del bucle normal");
+                            // println!("sale del bucle normal");
                         }
 
-                        println!("devolvio bien el left-pex");
+                        // println!("devolvio bien el left-pex");
                         Some(ce)
                     }, 
-                    None => {println!("devolvio None el left-pex");  None}
+                    None => {
+                        // println!("devolvio None el left-pex");  
+                        None
+                    }
                 }      
             },
 
-            _ => { println!("dio None en el prefix"); self.no_prefix_parse_fn_error(self.cur_token.clone()); None}
+            _ => { 
+                // println!("dio None en el prefix"); 
+                self.no_prefix_parse_fn_error(self.cur_token.clone()); 
+                None
+            }
         }
 
     }
@@ -492,7 +505,7 @@ impl Parser{
             None => return None
         };
 
-        println!("the stmt exprecion is {:?}", &stmt.expression);
+        // println!("the stmt exprecion is {:?}", &stmt.expression);
         if self.peek_token_is(Token::SEMICOLON){
             self.next_token();
         }
@@ -599,9 +612,9 @@ impl Parser{
             return true;
         }
         else{
-            println!(" ");
-            println!("entro en el erorr con: {:?},{:?}",self.cur_token.clone(),self.peek_token.clone());
-            println!(" ");
+            // println!(" ");
+            // println!("entro en el erorr con: {:?},{:?}",self.cur_token.clone(),self.peek_token.clone());
+            // println!(" ");
             let struct_to_error = TokenType{type_token: t.clone(), literal:"".to_string()}; 
             self.peek_error(struct_to_error);
             return false;
@@ -623,7 +636,10 @@ impl Parser{
                         ResultadoParseStatement::ParseExpressionStatement1(c) => { let resultado = c.unwrap();  program.Statements.push(Box::from(resultado)) ;},
                     };
                 },
-                None => println!("dio nulo el parse program") 
+                None => {
+                    // println!("dio nulo el parse program") 
+                    ()
+                }
 
             };
 
