@@ -19,6 +19,19 @@ struct PrefixTest{
 }
 
 #[warn(dead_code)]
+struct LetTest <T>{
+    input : String,
+    expected_ident : String,
+    expected_expression : T,
+}
+
+#[warn(dead_code)]
+struct ReturnTest <T>{
+    input : String,
+    expected_value : T,
+}
+
+#[warn(dead_code)]
 struct PrefixTest2 <T> {
     input : String,
     operator : String,
@@ -891,74 +904,184 @@ pub fn test_identifier_exprecion(){
 
 #[test]
 pub fn test_return_statement(){
-    let input =  "
-    return 2;
-    return 234234;
-    return 10;
-    ".to_string();
 
-    let l = types::new(input);
-    let mut p = parser::new(&l);    
+    let test_1 = [
+        ReturnTest{ input:"return 5;".to_string(), expected_value: 5 }
+    ];
 
-    let program = p.parse_program();
-    check_parser_errors(&p);
+    let test_2 = [
+        ReturnTest{ input:"return true;".to_string(), expected_value: true }
+    ];
 
-    if program.Statements.len() != 3 {
-        panic!("no hay tres statements, hay: {}", &program.Statements.len());
-    }
+    let test_3 = [
+        ReturnTest{ input:"return foobar;".to_string(), expected_value: "foobar".to_string() }
+    ];
 
-    for (i,e) in program.Statements.iter().enumerate(){
-
-        let sta =  match e.as_any().downcast_ref::<ast::ReturnStatement>() {
-            Some(b) => b,
-            None => panic!("&a no es B!"),
-        };
-
-        if e.token_literal() != "return"{
-            panic!("no es un return es un: {}", e.token_literal());
+    for i in test_1.iter() {
+        let l = types::new(i.input.to_string());
+        let mut p = parser::new(&l);
+        let program = p.parse_program();
+        check_parser_errors(&p);
+        if program.Statements.len() != 1 { panic!("program statements no tiene un statement,got: {}", program.Statements.len()); }
+        let stmt = &program.Statements[0];
+        let returnstmt =  match stmt.as_any().downcast_ref::<ast::ReturnStatement>() { Some(b) => b, None => panic!("stmt no es un returnstatement"), };
+        if returnstmt.token_literal() != "return".to_string() {
+            panic!("returnStmt.TokenLiteral no es 'return,got: {}", returnstmt.token_literal());
         }
-
+        let x = CDT{ valor_des:"valor a evaluar".to_string(), value:i.expected_value };
+        x.test_literal_expression(returnstmt.return_value.as_ref().unwrap());
     }
+
+    for i in test_2.iter() {
+        let l = types::new(i.input.to_string());
+        let mut p = parser::new(&l);
+        let program = p.parse_program();
+        check_parser_errors(&p);
+        if program.Statements.len() != 1 { panic!("program statements no tiene un statement,got: {}", program.Statements.len()); }
+        let stmt = &program.Statements[0];
+        let returnstmt =  match stmt.as_any().downcast_ref::<ast::ReturnStatement>() { Some(b) => b, None => panic!("stmt no es un returnstatement"), };
+        if returnstmt.token_literal() != "return".to_string() {
+            panic!("returnStmt.TokenLiteral no es 'return,got: {}", returnstmt.token_literal());
+        }
+        let x = CDT{ valor_des:"valor a evaluar".to_string(), value:i.expected_value };
+        x.test_literal_expression(returnstmt.return_value.as_ref().unwrap());
+    }
+
+    for i in test_3.iter() {
+        let l = types::new(i.input.to_string());
+        let mut p = parser::new(&l);
+        let program = p.parse_program();
+        check_parser_errors(&p);
+        if program.Statements.len() != 1 { panic!("program statements no tiene un statement,got: {}", program.Statements.len()); }
+        let stmt = &program.Statements[0];
+        let returnstmt =  match stmt.as_any().downcast_ref::<ast::ReturnStatement>() { Some(b) => b, None => panic!("stmt no es un returnstatement"), };
+        if returnstmt.token_literal() != "return".to_string() {
+            panic!("returnStmt.TokenLiteral no es 'return,got: {}", returnstmt.token_literal());
+        }
+        let x = CDT{ valor_des:"valor a evaluar".to_string(), value:i.expected_value.to_string() };
+        x.test_literal_expression(returnstmt.return_value.as_ref().unwrap());
+    }
+
+    // let input =  "
+    // return 2;
+    // return 234234;
+    // return 10;
+    // ".to_string();
+
+    // let l = types::new(input);
+    // let mut p = parser::new(&l);    
+
+    // let program = p.parse_program();
+    // check_parser_errors(&p);
+
+    // if program.Statements.len() != 3 {
+    //     panic!("no hay tres statements, hay: {}", &program.Statements.len());
+    // }
+
+    // for (i,e) in program.Statements.iter().enumerate(){
+
+    //     let sta =  match e.as_any().downcast_ref::<ast::ReturnStatement>() {
+    //         Some(b) => b,
+    //         None => panic!("&a no es B!"),
+    //     };
+
+    //     if e.token_literal() != "return"{
+    //         panic!("no es un return es un: {}", e.token_literal());
+    //     }
+
+    // }
 
 }
 
 #[test]
 pub fn test_let_statement(){
-    let input = "
-    let x = 4;
-    let y = 9;
-    let foo = 838383;
-    ".to_string();
 
-    let l = types::new(input);
-    let mut p = parser::new(&l);
-    
-    let program = p.parse_program();
-    check_parser_errors(&p);
-
-    if program.Statements.is_empty() {
-        panic!("retorno nulo");
-    }
-    
-    println!("el statement: {:?}", program.Statements  );
-
-    if program.Statements.len() != 3 {
-        panic!("Es mayor que tres statements, dio: {}", program.Statements.len());
-    }
-
-
-    let test = vec![ 
-        EI{expected_identifier:"x".to_string()}, 
-        EI{expected_identifier:"y".to_string()},
-        EI{expected_identifier:"foo".to_string()},  
+    let test_1 = [
+        LetTest{ input:"let x = 5".to_string(), expected_ident:"x".to_string(), expected_expression:5 }
     ];
 
-    for (i,e) in test.iter().enumerate(){
-        let stmt = &program.Statements[i];
-        if !test_let_statement_internal(&stmt, e.expected_identifier.to_string()){
-            return;
-        }
+    let test_2 = [
+        LetTest{ input:"let y = true".to_string(), expected_ident:"y".to_string(), expected_expression:true }
+    ];
+
+    let test_3 = [
+        LetTest{ input:"let foobar = y".to_string(), expected_ident:"foobar".to_string(), expected_expression:"y".to_string() }
+    ];
+
+    for i in test_1.iter() {
+        let l = types::new(i.input.to_string());
+        let mut p = parser::new(&l);
+        let program = p.parse_program();
+        check_parser_errors(&p);
+        if program.Statements.len() != 1 { panic!("program statements no tiene un statement,got: {}", program.Statements.len()); }
+        let stmt = &program.Statements[0];
+        if !test_let_statement_internal(stmt, i.expected_ident.to_string()){ return; }
+        let val =  match stmt.as_any().downcast_ref::<ast::let_statement>() { Some(b) => b, None => panic!("Statements[0] no es un let statement"), };
+        let x = CDT{ valor_des:"valor a evaluar".to_string(), value:i.expected_expression };
+        x.test_literal_expression(val.value.as_ref().unwrap());
     }
+
+    for i in test_2.iter() {
+        let l = types::new(i.input.to_string());
+        let mut p = parser::new(&l);
+        let program = p.parse_program();
+        check_parser_errors(&p);
+        if program.Statements.len() != 1 { panic!("program statements no tiene un statement,got: {}", program.Statements.len()); }
+        let stmt = &program.Statements[0];
+        if !test_let_statement_internal(stmt, i.expected_ident.to_string()){ return; }
+        let val =  match stmt.as_any().downcast_ref::<ast::let_statement>() { Some(b) => b, None => panic!("Statements[0] no es un let statement"), };
+        let x = CDT{ valor_des:"valor a evaluar".to_string(), value:i.expected_expression };
+        x.test_literal_expression(val.value.as_ref().unwrap());
+    }
+
+    for i in test_3.iter() {
+        let l = types::new(i.input.to_string());
+        let mut p = parser::new(&l);
+        let program = p.parse_program();
+        check_parser_errors(&p);
+        if program.Statements.len() != 1 { panic!("program statements no tiene un statement,got: {}", program.Statements.len()); }
+        let stmt = &program.Statements[0];
+        if !test_let_statement_internal(stmt, i.expected_ident.to_string()){ return; }
+        let val =  match stmt.as_any().downcast_ref::<ast::let_statement>() { Some(b) => b, None => panic!("Statements[0] no es un let statement"), };
+        let x = CDT{ valor_des:"valor a evaluar".to_string(), value:i.expected_expression.to_string() };
+        x.test_literal_expression(val.value.as_ref().unwrap());
+    }
+
+    // let input = "
+    // let x = 4;
+    // let y = 9;
+    // let foo = 838383;   
+    // ".to_string();
+
+    // let l = types::new(input);
+    // let mut p = parser::new(&l);
+    
+    // let program = p.parse_program();
+    // check_parser_errors(&p);
+
+    // if program.Statements.is_empty() {
+    //     panic!("retorno nulo");
+    // }
+    
+    // println!("el statement: {:?}", program.Statements  );
+
+    // if program.Statements.len() != 3 {
+    //     panic!("Es mayor que tres statements, dio: {}", program.Statements.len());
+    // }
+
+
+    // let test = vec![ 
+    //     EI{expected_identifier:"x".to_string()}, 
+    //     EI{expected_identifier:"y".to_string()},
+    //     EI{expected_identifier:"foo".to_string()},  
+    // ];
+
+    // for (i,e) in test.iter().enumerate(){
+    //     let stmt = &program.Statements[i];
+    //     if !test_let_statement_internal(&stmt, e.expected_identifier.to_string()){
+    //         return;
+    //     }
+    // }
 
 }
 
@@ -967,15 +1090,6 @@ fn test_let_statement_internal(s : &Box<dyn ast::Statement>, name:String ) -> bo
     if s.token_literal() != "let"{
         panic!("not let");
     }
-
-    // let sta = ast::let_statement{
-    //     value : None, 
-    //     token : types::TokenType{type_token:types::Token::EOF,literal:"".to_string()}, 
-    //     name: ast::Identifier{
-    //         token : types::TokenType{type_token:types::Token::EOF,literal:"".to_string()},
-    //         value : "".to_string() 
-    //     }, 
-    // };
 
     let sta =  match s.as_any().downcast_ref::<ast::let_statement>() {
         Some(b) => b,

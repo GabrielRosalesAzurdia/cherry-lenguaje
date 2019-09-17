@@ -500,16 +500,30 @@ impl Parser{
     }
 
     pub fn parse_return_statement(&mut self) -> Option<ast::ReturnStatement>{
-        let stmt = ast::ReturnStatement{token:self.cur_token.clone() , return_value:None};
+        let token_var = self.cur_token.clone();
         self.next_token();
+        let return_var = self.parse_expression(LOWEST);
 
-        //TODO: we are skipping the exprescions until we 
-        // Enconunter a semicolon
-        while !self.cur_token_is(Token::SEMICOLON){
+        if self.peek_token_is(Token::SEMICOLON){
             self.next_token();
         }
 
-        return Some(stmt);
+        return Some(
+            ast::ReturnStatement{
+                token:token_var,
+                return_value:return_var
+            }
+        )
+        // let stmt = ast::ReturnStatement{token:self.cur_token.clone() , return_value:None};
+        // self.next_token();
+
+        // //TODO: we are skipping the exprescions until we 
+        // // Enconunter a semicolon
+        // while !self.cur_token_is(Token::SEMICOLON){
+        //     self.next_token();
+        // }
+
+        // return Some(stmt);
     }
 
     pub fn parse_let_statement(&mut self) -> Option<ast::let_statement> {
@@ -527,18 +541,47 @@ impl Parser{
             return None;
         }
 
-        stmt.name = ast::Identifier{token : self.cur_token.clone(), value: self.cur_token.literal.to_string()};
+        stmt.name =  ast::Identifier{token : self.cur_token.clone(), value: self.cur_token.literal.to_string()};
 
         if !self.expect_peek(Token::ASSING){
-            return None
-        } 
+            return None;
+        }
 
-        // TODO: We are Skiping the exprecion until we encounter a semicolon
-        while !self.cur_token_is(Token::SEMICOLON){
+        self.next_token();
+
+        stmt.value = self.parse_expression(LOWEST);
+
+        if self.peek_token_is(Token::SEMICOLON){
             self.next_token();
         }
 
         return Some(stmt);
+
+        // let mut stmt = ast::let_statement{
+        //     value : None, 
+        //     token : self.cur_token.clone(), 
+        //     name: ast::Identifier{
+        //         token : TokenType{type_token:Token::EOF,literal:"".to_string()},
+        //         value : "".to_string() 
+        //     }, 
+        // };
+
+        // if !self.expect_peek(Token::IDENT){
+        //     return None;
+        // }
+
+        // stmt.name = ast::Identifier{token : self.cur_token.clone(), value: self.cur_token.literal.to_string()};
+
+        // if !self.expect_peek(Token::ASSING){
+        //     return None
+        // } 
+
+        // // TODO: We are Skiping the exprecion until we encounter a semicolon
+        // while !self.cur_token_is(Token::SEMICOLON){
+        //     self.next_token();
+        // }
+
+        // return Some(stmt);
 
     }
 
