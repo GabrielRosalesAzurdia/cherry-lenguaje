@@ -534,7 +534,7 @@ impl Parser{
         } 
 
         // TODO: We are Skiping the exprecion until we encounter a semicolon
-        while self.cur_token_is(Token::SEMICOLON){
+        while !self.cur_token_is(Token::SEMICOLON){
             self.next_token();
         }
 

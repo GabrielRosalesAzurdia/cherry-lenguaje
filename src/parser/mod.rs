@@ -923,7 +923,6 @@ pub fn test_return_statement(){
 }
 
 #[test]
-#[should_panic]
 pub fn test_let_statement(){
     let input = "
     let x = 4;
