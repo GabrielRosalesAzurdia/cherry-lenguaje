@@ -335,3 +335,186 @@ impl Expression for Boolean {
 
 //------------------------------------------------------------------------------
 
+#[warn(dead_code)]
+pub struct IfExpression {
+    pub token : TokenType,
+    pub condition : Box<dyn Expression>,
+    pub consequence : Option<BlockStatement>,
+    pub alternative : Option<BlockStatement>,
+}
+
+impl Node for IfExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.to_string()
+    }
+
+    fn a_string(&self) -> String {
+        let mut x = String::from("if");
+        x = x + &self.condition.a_string();
+        x = x + " ";
+
+        match &self.consequence {
+            Some(c) => x = x + &c.a_string(),
+            None => x = x + "no hay consequence", 
+        };
+
+        match &self.alternative {
+            Some(c) => {x=x+"else ";  x = x + &c.a_string();},
+            None => x = x + "no hay alternative", 
+        };
+
+        x
+    }
+}
+
+impl Expression for IfExpression {
+    fn expression_node(&self){
+
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    } 
+}
+
+//------------------------------------------------------------------------------
+
+#[warn(dead_code)]
+pub struct BlockStatement{
+    pub token : TokenType,
+    pub statements : Vec<Box<dyn Statement>>
+}
+
+impl Node for BlockStatement {
+    fn token_literal(&self) -> String {
+        self.token.literal.to_string()
+    }
+
+    fn a_string(&self) -> String {
+
+        let mut x = "".to_string();
+
+        for i in self.statements.iter(){
+            x = x + &i.a_string();
+        }
+
+        x
+    }
+}
+
+impl Statement for BlockStatement {
+    fn statement_node (&self){
+
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    } 
+}
+
+//------------------------------------------------------------------------------
+
+#[warn(dead_code)]
+pub struct FunctionLiteral {
+    pub token : TokenType,
+    pub parameters : Vec<Identifier>,
+    pub body : BlockStatement,
+}
+
+impl Node for FunctionLiteral {
+    fn token_literal(&self) -> String {
+        self.token.literal.to_string()
+    }
+
+    fn a_string(&self) -> String {
+        let mut x = String::from("");
+        let mut params:Vec<String> = vec![];
+
+        // let mut a = &vec![];
+
+        // match self.parameters.as_ref() {
+        //     Some(c) => a = c,
+        //     None => (),
+        // };
+
+        for i in self.parameters.iter() {
+            params.push(i.a_string());
+        }
+
+        x = x + &self.token_literal();
+        x = x + "(";
+
+        for i in params {
+            x = x + &i + ", ";
+        }
+
+        x = x + ")";
+        x = x + &self.body.a_string();
+        x
+    }
+}
+
+impl Expression for FunctionLiteral {
+    fn expression_node (&self){
+
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    } 
+}
+
+//------------------------------------------------------------------------------
+
+#[warn(dead_code)]
+pub struct CallExpression{
+    pub token : TokenType ,
+    pub function : Box<dyn Expression>,
+    pub arguments : Vec<Box<dyn Expression>>
+}
+
+impl Node for CallExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.to_string()
+    }
+
+    fn a_string(&self) -> String {
+        let mut x = String::from("");
+        let mut args : Vec<String> = vec![];
+
+        for i in self.arguments.iter() {
+            args.push(i.a_string());
+        }
+
+        x = x + &self.function.a_string();
+        
+        x = x + "(";
+
+        let mut c = 0;
+
+        for i in args.iter() {
+            c = c + 1 ;
+            println!("vamos a evaluar a i: {}, {} , {}", i, c , args.len());
+            if args.len() != 1 && c < args.len(){
+                x = x + i + ", ";
+            }
+            else{
+                x = x + i;
+            }
+        }
+
+        x = x + ")";
+
+        x
+    }
+}
+
+impl Expression for CallExpression {
+    fn expression_node (&self){
+
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    } 
+}

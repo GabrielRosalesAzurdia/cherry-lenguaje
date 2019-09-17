@@ -59,6 +59,370 @@ pub struct CDT<T> {
     pub valor_des : String,
 }
 
+#[warn(dead_code)]
+pub struct FunctionParameterParsigTest{
+    input : String ,
+    expect_params : Vec<String>
+}
+
+#[warn(dead_code)]
+pub struct TestCallExpressionParameterParsing{
+    input : String,
+    expected_ident : String,
+    expected_args : Vec<String>,
+}
+
+#[test]
+pub fn test_call_expression_parameter_parsing(){
+    let test = vec![
+        TestCallExpressionParameterParsing{
+            input:"add();".to_string(), 
+            expected_ident:"add".to_string(), 
+            expected_args:vec![]
+        },
+        TestCallExpressionParameterParsing{
+            input:"add(1);".to_string(), 
+            expected_ident:"add".to_string(), 
+            expected_args:vec!["1".to_string()]
+        },
+        TestCallExpressionParameterParsing{
+            input:"add(1,2 * 3, 4 + 5);".to_string(), 
+            expected_ident:"add".to_string(), 
+            expected_args:vec!["1".to_string(), "(2 * 3)".to_string(), "(4 + 5)".to_string() ]}, 
+    ];
+
+    for i in test.iter(){
+        let l = types::new(i.input.to_string());
+        let mut p = parser::new(&l);
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+        let stmt =  match program.Statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+            Some(b) => b,
+            None => panic!("program.Statements[0] no es un Expresion statement"),
+        };   
+
+        let exp =  match stmt.expression.as_any().downcast_ref::<ast::CallExpression>() {
+            Some(b) => b,
+            None => panic!("stmt.expression no es un CallExpression"),
+        };   
+
+        if !test_identifier(&exp.function, i.expected_ident.to_string()){
+            return;
+        } 
+
+        if exp.arguments.len() != i.expected_args.len() {
+            panic!("numero equivocado de argumentos, esperados: {}, got: {}",i.expected_args.len(),  exp.arguments.len());
+        }
+
+        for (j,e) in i.expected_args.iter().enumerate() {
+            if exp.arguments[j].a_string() != e.to_string(){
+                panic!("mal argument, esperado: {}, got: {}", e, exp.arguments[j].a_string());
+            }
+        }
+
+    }
+}
+
+#[test]
+pub fn test_call_expression_parsing(){
+    let input = "add(1, 2 * 3, 4 + 5);".to_string();
+    let l = types::new(input.to_string());
+    let mut p = parser::new(&l);
+    let program = p.parse_program();
+    check_parser_errors(&p);   
+
+    let stmt =  match program.Statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+        Some(b) => b,
+        None => panic!("program.Statements[0] no es un Expresion statement"),
+    };   
+
+    let exp =  match stmt.expression.as_any().downcast_ref::<ast::CallExpression>() {
+        Some(b) => b,
+        None => panic!("stmt.expression no es un CallExpression"),
+    };   
+
+    if !test_identifier(&exp.function, "add".to_string()){
+        return;
+    }
+
+    if exp.arguments.len() != 3{
+        panic!("mal cantidad de argumentos,got: {}",exp.arguments.len());
+    }
+
+    let x = CDT{
+        valor_des: "valor entero".to_string(),
+        value : 1
+    };
+
+    x.test_literal_expression(&exp.arguments[0]);
+
+    let l1 = CDT{
+        valor_des: "operacion 1".to_string(),
+        value : 2
+    };
+
+    let r1 = CDT{
+        valor_des: "operacion 1".to_string(),
+        value : 3
+    };
+
+    let l2 = CDT{
+        valor_des: "operacion 2".to_string(),
+        value : 4
+    };
+
+    let r2 = CDT{
+        valor_des: "operacion 2".to_string(),
+        value : 5
+    };
+
+    test_infix_expression(&exp.arguments[1], l1, "*".to_string(), r1);
+    test_infix_expression(&exp.arguments[2], l2, "+".to_string(), r2);
+}
+
+#[test]
+pub fn test_function_parameter_parsing(){
+    let test = vec![
+        FunctionParameterParsigTest{ input:"fn() {};".to_string(), expect_params:vec![] },
+        FunctionParameterParsigTest{ input:"fn(x) {};".to_string(), expect_params:vec!["x".to_string()] },
+        FunctionParameterParsigTest{ input:"fn(x, y, z) {};".to_string(), expect_params:vec!["x".to_string(), "y".to_string(), "z".to_string()] }
+    ];
+
+    for i in test.iter(){
+        let l = types::new(i.input.to_string());
+        let mut p = parser::new(&l);
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+
+        let stmt =  match program.Statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+            Some(b) => b,
+            None => panic!("program.Statements[0] no es un Expresion statement"),
+        };   
+
+        let funct =  match stmt.expression.as_any().downcast_ref::<ast::FunctionLiteral>() {
+            Some(b) => b,
+            None => panic!("stmt.expression no es un functionliteral"),
+        };   
+
+        if funct.parameters.len() != i.expect_params.len(){
+            panic!("el fucnt.parameters es: {}, y el i.expect_params es: {}", funct.parameters.len(), i.expect_params.len());
+        }
+
+        for (j,e) in i.expect_params.iter().enumerate() {
+            let x = CDT{
+                valor_des : "valor dentro del vector de nombre de variables".to_string(),
+                value : e.to_string()
+            };
+
+            let y : Box<(dyn ast::Expression + 'static)> = Box::from(  ast::Identifier{ token: funct.parameters[j].token.clone(), value : funct.parameters[j].value.to_string() } );
+
+            x.test_literal_expression( &y );
+        }
+
+    }
+}
+
+#[test]
+pub fn test_function_literal_parsing(){
+    let input = "fn(x, y) { x + y; }".to_string();
+    let l = types::new(input.to_string());
+    let mut p = parser::new(&l);
+    let program = p.parse_program();
+    check_parser_errors(&p);
+
+    if program.Statements.len() != 1 {
+        panic!("progra.Statements no tiene un statemet, got: {}", program.Statements.len());
+    }
+
+    let stmt =  match program.Statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+        Some(b) => b,
+        None => panic!("program.Statements[0] no es un Expresion statement"),
+    };
+
+    let funct =  match stmt.expression.as_any().downcast_ref::<ast::FunctionLiteral>() {
+        Some(b) => b,
+        None => panic!("stmt.expression no es un FunctionLiteral"),
+    };
+                    
+    if funct.parameters.len() != 2 {
+        panic!("funct.parameters no tiene 2 parametros, got: {}", funct.parameters.len());
+    }
+
+    let px = CDT{
+        valor_des : "parametro x".to_string(),
+        value : "x".to_string()
+    };
+
+    let py = CDT{
+        valor_des : "parametro y".to_string(),
+        value : "y".to_string()
+    };
+
+    let x : Box<(dyn ast::Expression + 'static)> = Box::from(  ast::Identifier{ token: funct.parameters[0].token.clone(), value : funct.parameters[0].value.to_string() } );
+    let y : Box<(dyn ast::Expression + 'static)> = Box::from(  ast::Identifier{ token: funct.parameters[1].token.clone(), value : funct.parameters[1].value.to_string() } );
+
+    px.test_literal_expression( &x );
+    py.test_literal_expression( &y );
+
+    if funct.body.statements.len() != 1 {
+        panic!("funct.body.statements no tiene 1 statement, got: {}",funct.body.statements.len());
+    }
+
+    let bodystmt = match funct.body.statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+        Some(b) => b,
+        None => panic!("funct.body.statements[0] no es un expressionstatement"),
+    };
+
+    let l  = CDT{
+        valor_des: "es letra x".to_string(),
+        value : "x".to_string(),
+    };
+
+    let r  = CDT{
+        valor_des: "es letra y".to_string(),
+        value : "y".to_string(),
+    };
+
+    test_infix_expression( &bodystmt.expression , l , "+".to_string() , r);
+
+}
+
+#[test]
+pub fn test_if_else_expression(){
+    let input = "if (x < y) { x } else { y }".to_string();
+    let l = types::new(input.to_string());
+    let mut p = parser::new(&l);
+    let program = p.parse_program();
+    check_parser_errors(&p);
+
+    if program.Statements.len() != 1 {
+        panic!("program.statements no tiene 1 statement tiene , got: {}", program.Statements.len());
+    }
+
+    let stmt =  match program.Statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+        Some(b) => b,
+        None => panic!("program.Statements[0] no es un Expresion statement"),
+    };
+
+    let exp =  match stmt.expression.as_any().downcast_ref::<ast::IfExpression>() {
+        Some(b) => b,
+        None => panic!("stmt.expression no es un IfExpression"),
+    };
+
+    let l = CDT{
+        valor_des: "es una x".to_string(),
+        value : "x".to_string()
+    };
+
+    let r = CDT{
+        valor_des: "es una y".to_string(),
+        value: "y".to_string()
+    };
+
+    if !test_infix_expression(&exp.condition,  l, "<".to_string(), r){
+        return;
+    }
+
+    let x = match &exp.consequence{
+        Some(c) => c ,
+        None => panic!("no hay consequence")
+    };
+
+    if x.statements.len() != 1 {
+        panic!("consequence no tiene 1 statement tiene, got: {}");
+    }     
+
+    let conse =  match x.statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+        Some(b) => b,
+        None => panic!("x.statements[0] no es un ExpressionStatement"),
+    };
+
+    if !test_identifier(&conse.expression, "x".to_string()){
+        return;
+    }
+
+    let y = match &exp.alternative{
+        Some(c) => c ,
+        None => panic!("no hay alternative")
+    };
+
+    if y.statements.len() != 1 {
+        panic!("alternative no tiene 1 statement, got: {}", y.statements.len());
+    }
+
+    let alter =  match y.statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+        Some(b) => b,
+        None => panic!("y.statemenets[0] no es un ExpressionStatement"),
+    };
+
+    if !test_identifier(&alter.expression, "y".to_string()){
+        return;
+    }
+
+}
+
+#[test]
+pub fn test_if_expression(){
+    let input = "if (x < y) { x } ".to_string();
+    let l = types::new(input.to_string());
+    let mut p = parser::new(&l);
+    let program = p.parse_program();
+    check_parser_errors(&p);
+
+    if program.Statements.len() != 1 {
+        panic!("el cuerpo del programa no contiene 1 sino, got: {}", program.Statements.len());
+    }
+
+    let stmt =  match program.Statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+        Some(b) => b,
+        None => panic!("program.Statements[0] no es un Expresion statement"),
+    };
+
+    let exp =  match stmt.expression.as_any().downcast_ref::<ast::IfExpression>() {
+        Some(b) => b,
+        None => panic!("stmt.expression no es un IfExpression"),
+    };
+
+    let l = CDT{
+        valor_des: "es una x".to_string(),
+        value : "x".to_string()
+    };
+
+    let r = CDT{
+        valor_des: "es una y".to_string(),
+        value: "y".to_string()
+    };
+
+    if !test_infix_expression(&exp.condition,  l, "<".to_string(), r){
+        return;
+    }
+
+    let x = match &exp.consequence{
+        Some(c) => c ,
+        None => panic!("no hay consequence")
+    };
+
+    if x.statements.len() != 1 {
+        panic!("consequence no tiene 1 statement tiene, got: {}");
+    } 
+
+    let conse =  match x.statements[0].as_any().downcast_ref::<ast::ExpressionStatement>() {
+        Some(b) => b,
+        None => panic!("x.statements[0] no es un ExpressionStatement"),
+    };
+
+    if !test_identifier(&conse.expression, "x".to_string()){
+        return;
+    }
+
+    match exp.alternative {
+        Some(_) => panic!("no deveria haver un alternative"),
+        None => () 
+    };
+
+}
 
 #[test]
 pub fn test_boolean_expression(){
@@ -230,6 +594,9 @@ pub fn test_operation_presedence_parsing (){
         OperationPresedence{ input:"2 / (5 + 5)".to_string(), expected:"(2 / (5 + 5))".to_string() },
         OperationPresedence{ input:"-(5 + 5)".to_string(), expected:"(-(5 + 5))".to_string() },
         OperationPresedence{ input:"!(true == true)".to_string(), expected:"(!(true == true))".to_string() },
+        OperationPresedence{ input:"a + add(b * c) + d".to_string(), expected:"((a + add((b * c))) + d)".to_string() },
+        OperationPresedence{ input:"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))".to_string(), expected:"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))".to_string() },
+        OperationPresedence{ input:"add(a + b + c * d / f + g)".to_string(), expected:"add((((a + b) + ((c * d) / f)) + g))".to_string() },
     ];
 
     for i in test.iter() {
