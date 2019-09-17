@@ -6,8 +6,10 @@ pub mod parser;
 use ab_st_tr::ast::Node;
 
 fn main() {
+    println!(" ");
     println!("hello, welcome to the cherry programing lenguaje");
     println!("feel free to type comands");
+    println!(" ");
     let stdin = io::stdin();
 
     loop {
