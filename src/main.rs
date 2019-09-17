@@ -19,7 +19,7 @@ fn main() {
 
         let mut line = String::new();
         stdin.lock().read_line(&mut line).expect("Error reading from stdin");
-        let mut lexer = lexer::types::new(line);
+        let lexer = lexer::types::new(line);
         let mut p = parser::parser::new(&lexer);
 
         let program = p.parse_program();
